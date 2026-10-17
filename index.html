@@ -385,6 +385,96 @@ $("receiptForm").addEventListener("submit", e => {
   persist();
   alert("Saved as an expense. The receipt image was not automatically read.");
 });
+// RECEIPT SCANNER OCR
+$("receiptFile").addEventListener("change", () => {
+  const file = $("receiptFile").files[0];
+  if (!file) return;
+
+  $("receiptName").textContent = file.name;
+
+  const preview = $("receiptPreview");
+  preview.src = URL.createObjectURL(file);
+  preview.classList.remove("hidden");
+  preview.style.display = "block";
+
+  $("receiptStatus").textContent =
+    "Receipt uploaded. Click Read Receipt to scan the text.";
+});
+
+$("readReceipt").addEventListener("click", async () => {
+  const file = $("receiptFile").files[0];
+
+  if (!file) {
+    $("receiptStatus").textContent =
+      "Please upload a receipt image first.";
+    return;
+  }
+
+  if (typeof Tesseract === "undefined") {
+    $("receiptStatus").textContent =
+      "OCR library not loaded. Please refresh the page and try again.";
+    return;
+  }
+
+  $("readReceipt").disabled = true;
+  $("receiptStatus").textContent = "Reading receipt... Please wait.";
+
+  try {
+    const result = await Tesseract.recognize(file, "eng", {
+      logger: (message) => {
+        if (message.status === "recognizing text") {
+          $("receiptStatus").textContent =
+            Reading receipt: ${Math.round(message.progress * 100)}%;
+        }
+      }
+    });
+
+    const text = result.data.text.trim();
+    $("receiptText").textContent = text || "No text detected.";
+
+    if (!text) {
+      $("receiptStatus").textContent =
+        "No text found. Try a clearer receipt photo.";
+      return;
+    }
+
+    const lines = text
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    if (!$("rDesc").value.trim() && lines.length) {
+      $("rDesc").value = lines[0].slice(0, 100);
+    }
+
+    const moneyPattern = /(?:₱|PHP\s*)?\s*([\d,]+\.\d{2})/gi;
+    const totalLine = lines.find(line =>
+      /\b(grand total|total due|amount due|total)\b/i.test(line)
+    );
+
+    let amounts = [];
+    const searchText = totalLine || lines.slice().reverse().join("\n");
+    let match;
+
+    while ((match = moneyPattern.exec(searchText)) !== null) {
+      const amount = Number(match[1].replace(/,/g, ""));
+      if (Number.isFinite(amount)) amounts.push(amount);
+    }
+
+    if (amounts.length) {
+      $("rAmount").value = Math.max(...amounts).toFixed(2);
+    }
+
+    $("receiptStatus").textContent =
+      "Receipt scanned! Check the description and amount before saving.";
+  } catch (error) {
+    console.error(error);
+    $("receiptStatus").textContent =
+      "Could not read receipt. Check your internet connection and try again.";
+  } finally {
+    $("readReceipt").disabled = false;
+  }
+});
 
 function convert() {
   const amount = Number($("phpAmount").value);
