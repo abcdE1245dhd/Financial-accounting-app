@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123c35">
+  <title>FinTrack ABM</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --green: #123c35;
+      --mint: #e3f3eb;
+      --bg: #f5f7f5;
+      --white: #fff;
+      --text: #202a26;
+      --muted: #718078;
+      --border: #e1e8e3;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    header {
+      background: var(--green); color: white;
+      padding: 22px 18px; border-radius: 0 0 22px 22px;
+    }
+    header h1 { margin: 0 0 6px; font-size: 25px; }
+    header p { margin: 0; opacity: .8; font-size: 13px; }
+    main { max-width: 800px; margin: auto; padding: 16px; }
+    nav {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 10px 0 16px;
+    }
+    nav button { flex-shrink: 0; }
+    button, input, select {
+      font: inherit; border-radius: 10px; padding: 11px;
+    }
+    button {
+      border: 0; background: var(--green);
+      color: white; cursor: pointer;
+    }
+    button.secondary { background: var(--mint); color: var(--green); }
+    input, select {
+      width: 100%; border: 1px solid var(--border);
+      background: white; color: var(--text);
+    }
+    label { display: block; font-size: 13px; font-weight: bold; }
+    label input, label select { margin-top: 6px; }
+    .grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    .card {
+      background: var(--white); padding: 16px;
+      border: 1px solid var(--border); border-radius: 16px;
+      margin-bottom: 12px; min-width: 0;
+    }
+    .card h3 { margin: 0 0 12px; font-size: 15px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .amount { font-size: 21px; font-weight: bold; margin-top: 8px; }
+    .form { display: grid; gap: 12px; }
+    .row { display: flex; justify-content: space-between; gap: 10px; }
+    .record { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .record:last-child { border-bottom: 0; }
+    .hidden { display: none !important; }
+    .good { color: #147a4a; }
+    .bad { color: #bd3d35; }
+    .notice {
+      background: var(--mint); border-radius: 10px;
+      padding: 12px; font-size: 13px; line-height: 1.5;
+    }
+    .wide { grid-column: 1 / -1; }
+    h2 { font-size: 19px; }
+    footer { text-align: center; padding: 20px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 380px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🌿 FinTrack ABM</h1>
+  <p>Your money, your records, your progress.</p>
+</header>
+
+<main>
+  <nav>
+    <button onclick="show('home')">Dashboard</button>
+    <button class="secondary" onclick="show('transactions')">Transactions</button>
+    <button class="secondary" onclick="show('savings')">Savings</button>
+    <button class="secondary" onclick="show('journal')">Journal</button>
+    <button class="secondary" onclick="show('sfp')">SFP</button>
+    <button class="secondary" onclick="show('tools')">Tools</button>
+  </nav>
+
+  <section id="home">
+    <h2>Financial Dashboard</h2>
+    <div class="grid">
+      <div class="card"><div class="muted">Total Income</div><div id="incomeTotal" class="amount">₱0.00</div></div>
+      <div class="card"><div class="muted">Total Expenses</div><div id="expenseTotal" class="amount">₱0.00</div></div>
+      <div class="card"><div class="muted">Net Cash Flow</div><div id="netTotal" class="amount">₱0.00</div></div>
+      <div class="card"><div class="muted">Savings Progress</div><div id="savedTotal" class="amount">₱0.00</div></div>
+    </div>
+    <div class="card">
+      <h3>Recent Transactions</h3>
+      <div id="recentList" class="muted">No transactions yet.</div>
+    </div>
+    <div class="notice">Your records are saved in this browser on this device. This prototype does not sync to other devices.</div>
+  </section>
+
+  <section id="transactions" class="hidden">
+    <h2>Income & Expense Tracker</h2>
+    <div class="card">
+      <form id="txForm" class="form">
+        <label>Transaction type
+          <select id="txType"><option value="income">Income</option><option value="expense">Expense</option></select>
+        </label>
+        <label>Description <input id="txDesc" required placeholder="e.g. Sales or School Supplies"></label>
+        <label>Amount in PHP <input id="txAmount" type="number" min="0.01" step="0.01" required></label>
+        <label>Date <input id="txDate" type="date" required></label>
+        <button type="submit">Save Transaction</button>
+      </form>
+    </div>
+    <div class="card"><h3>All Transactions</h3><div id="txList"></div></div>
+  </section>
+
+  <section id="savings" class="hidden">
+    <h2>Savings / Ipon Tracker</h2>
+    <div class="card">
+      <form id="saveForm" class="form">
+        <label>Savings goal name <input id="goalName" required placeholder="e.g. Emergency Fund"></label>
+        <label>Target amount (₱) <input id="goalTarget" type="number" min="1" step="0.01" required></label>
+        <label>Amount saved (₱) <input id="goalSaved" type="number" min="0" step="0.01" value="0" required></label>
+        <button type="submit">Save Goal</button>
+      </form>
+    </div>
+    <div id="goalList"></div>
+  </section>
+
+  <section id="journal" class="hidden">
+    <h2>Journal — Debit & Credit</h2>
+    <div class="card">
+      <form id="journalForm" class="form">
+        <label>Date <input id="jDate" type="date" required></label>
+        <label>Description <input id="jDesc" required placeholder="Explain the transaction"></label>
+        <label>Debit account
+          <select id="jDebit">
+            <option>Cash</option><option>Accounts Receivable</option>
+            <option>Supplies</option><option>Supplies Expense</option>
+            <option>Equipment</option><option>Accounts Payable</option>
+            <option>Owner's Capital</option><option>Sales Revenue</option>
+            <option>Utilities Expense</option><option>Rent Expense</option>
+          </select>
+        </label>
+        <label>Credit account
+          <select id="jCredit">
+            <option>Cash</option><option>Accounts Receivable</option>
+            <option>Supplies</option><option>Supplies Expense</option>
+            <option>Equipment</option><option>Accounts Payable</option>
+            <option>Owner's Capital</option><option>Sales Revenue</option>
+            <option>Utilities Expense</option><option>Rent Expense</option>
+          </select>
+        </label>
+        <label>Amount (₱) <input id="jAmount" type="number" min="0.01" step="0.01" required></label>
+        <button type="submit">Save Journal Entry</button>
+      </form>
+    </div>
+    <div class="card"><h3>Journal Records</h3><div id="journalList"></div></div>
+    <div class="notice">This basic journal uses one debit and one credit account per entry. Always verify the correct accounting treatment.</div>
+  </section>
+
+  <section id="sfp" class="hidden">
+    <h2>Statement of Financial Position</h2>
+    <div class="notice">Preliminary report from posted journal entries. This is not yet a complete, production-ready SFP.</div>
+    <div class="card"><h3>Account Balances</h3><div id="sfpList"></div><hr><div id="sfpCheck"></div></div>
+  </section>
+
+  <section id="tools" class="hidden">
+    <h2>Financial Tools</h2>
+    <div class="card">
+      <h3>Receipt Scanner — prototype</h3>
+      <p class="muted">Select a receipt image. For now, enter the details manually. Automatic OCR will be added in a later step.</p>
+      <input type="file" id="receiptFile" accept="image/*">
+      <div id="receiptName" class="muted"></div>
+      <form id="receiptForm" class="form" style="margin-top:12px">
+        <label>Merchant / description <input id="rDesc" required></label>
+        <label>Amount (₱) <input id="rAmount" type="number" min="0.01" step="0.01" required></label>
+        <label>Suggested account
+          <select id="rAccount">
+            <option>Supplies</option><option>Supplies Expense</option>
+            <option>Utilities Expense</option><option>Equipment</option>
+            <option>Cash</option><option>Accounts Payable</option>
+          </select>
+        </label>
+        <button type="submit">Confirm & Save as Expense</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>PHP Currency Converter</h3>
+      <p class="muted">Enter an exchange rate from a trusted source. No live rate is fetched in this version.</p>
+      <label>Amount in PHP <input id="phpAmount" type="number" min="0" value="100"></label>
+      <label style="margin-top:12px">Foreign currency
+        <select id="currency"><option value="USD">USD</option><option value="JPY">JPY</option><option value="EUR">EUR</option><option value="SGD">SGD</option></select>
+      </label>
+      <label style="margin-top:12px">PHP per 1 unit of selected currency
+        <input id="exchangeRate" type="number" min="0.0001" step="0.0001" value="58">
+      </label>
+      <button style="margin-top:12px" onclick="convert()">Convert</button>
+      <div id="conversionResult" class="amount"></div>
+    </div>
+    <div class="card">
+      <h3>Accounting Explanation</h3>
+      <p class="muted">Example: Buying supplies with cash.</p>
+      <p><b>Debit:</b> Supplies — increases an asset.</p>
+      <p><b>Credit:</b> Cash — decreases an asset.</p>
+      <p class="muted">If supplies are immediately consumed, Supplies Expense may be appropriate instead. Confirm the actual transaction.</p>
+    </div>
+  </section>
+</main>
+<footer>FinTrack ABM · Student prototype · Keep your records backed up</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const peso = n => Number(n || 0).toLocaleString("en-PH", {
+  style: "currency", currency: "PHP"
+});
+const today = new Date().toLocaleDateString("en-CA");
+
+let transactions = JSON.parse(localStorage.getItem("ft_transactions") || "[]");
+let goals = JSON.parse(localStorage.getItem("ft_goals") || "[]");
+let journals = JSON.parse(localStorage.getItem("ft_journals") || "[]");
+
+$("txDate").value = today;
+$("jDate").value = today;
+
+function persist() {
+  localStorage.setItem("ft_transactions", JSON.stringify(transactions));
+  localStorage.setItem("ft_goals", JSON.stringify(goals));
+  localStorage.setItem("ft_journals", JSON.stringify(journals));
+  render();
+}
+
+function show(id) {
+  document.querySelectorAll("main section").forEach(s => s.classList.add("hidden"));
+  $(id).classList.remove("hidden");
+  render();
+}
+
+$("txForm").addEventListener("submit", e => {
+  e.preventDefault();
+  transactions.unshift({
+    id: Date.now(), type: $("txType").value,
+    desc: $("txDesc").value.trim(),
+    amount: Number($("txAmount").value), date: $("txDate").value
+  });
+  e.target.reset();
+  $("txDate").value = today;
+  persist();
+});
+
+$("saveForm").addEventListener("submit", e => {
+  e.preventDefault();
+  goals.push({
+    id: Date.now(), name: $("goalName").value.trim(),
+    target: Number($("goalTarget").value),
+    saved: Number($("goalSaved").value)
+  });
+  e.target.reset();
+  $("goalSaved").value = 0;
+  persist();
+});
+
+$("journalForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if ($("jDebit").value === $("jCredit").value) {
+    alert("Choose different debit and credit accounts.");
+    return;
+  }
+  journals.unshift({
+    id: Date.now(), date: $("jDate").value,
+    desc: $("jDesc").value.trim(),
+    debit: $("jDebit").value, credit: $("jCredit").value,
+    amount: Number($("jAmount").value)
+  });
+  e.target.reset();
+  $("jDate").value = today;
+  persist();
+});
+
+$("receiptFile").addEventListener("change", () => {
+  $("receiptName").textContent =
+    $("receiptFile").files[0]?.name || "";
+});
+
+$("receiptForm").addEventListener("submit", e => {
+  e.preventDefault();
+  transactions.unshift({
+    id: Date.now(), type: "expense",
+    desc: $("rDesc").value.trim() + " (" + $("rAccount").value + ")",
+    amount: Number($("rAmount").value), date: today
+  });
+  e.target.reset();
+  $("receiptName").textContent = "";
+  persist();
+  alert("Saved as an expense. The receipt image was not automatically read.");
+});
+
+function convert() {
+  const amount = Number($("phpAmount").value);
+  const rate = Number($("exchangeRate").value);
+  if (amount < 0 || rate <= 0) {
+    $("conversionResult").textContent = "Enter valid amounts and rate.";
+    return;
+  }
+  $("conversionResult").textContent =
+    (amount / rate).toLocaleString("en-US", {
+      style: "currency", currency: $("currency").value
+    });
+}
+$("currency").addEventListener("change", () => {
+  const rates = { USD: 58, JPY: 0.39, EUR: 63, SGD: 44 };
+  $("exchangeRate").value = rates[$("currency").value];
+  convert();
+});
+
+function render() {
+  const income = transactions.filter(t => t.type === "income")
+    .reduce((s,t) => s + t.amount, 0);
+  const expenses = transactions.filter(t => t.type === "expense")
+    .reduce((s,t) => s + t.amount, 0);
+  const saved = goals.reduce((s,g) => s + g.saved, 0);
+
+  $("incomeTotal").textContent = peso(income);
+  $("expenseTotal").textContent = peso(expenses);
+  $("netTotal").textContent = peso(income - expenses);
+  $("savedTotal").textContent = peso(saved);
+
+  $("recentList").innerHTML = transactions.slice(0,5).map(t =>
+    `<div class="record row"><div>${esc(t.desc)}<div class="muted">${esc(t.date)}</div></div>
+    <b class="${t.type === "income" ? "good" : "bad"}">${t.type === "income" ? "+" : "-"}${peso(t.amount)}</b></div>`
+  ).join("") || "No transactions yet.";
+
+  $("txList").innerHTML = transactions.map(t =>
+    `<div class="record row"><div>${esc(t.desc)}<div class="muted">${esc(t.date)} · ${t.type}</div></div>
+    <b>${peso(t.amount)}</b></div>`
+  ).join("") || "No transactions yet.";
+
+  $("goalList").innerHTML = goals.map(g => {
+    const pct = Math.min(100, g.saved / g.target * 100);
+    return `<div class="card"><h3>${esc(g.name)}</h3>
+      <p>${peso(g.saved)} saved of ${peso(g.target)}</p>
+      <progress max="100" value="${pct}" style="width:100%"></progress>
+      <p class="muted">${pct.toFixed(1)}% complete</p>
+      <button class="secondary" onclick="addSaving(${g.id})">Add savings</button>
+      <button onclick="deleteGoal(${g.id})">Delete</button></div>`;
+  }).join("") || '<div class="card">No savings goals yet.</div>';
+
+  $("journalList").innerHTML = journals.map(j =>
+    `<div class="record"><b>${esc(j.desc)}</b><div class="muted">${esc(j.date)}</div>
+    Debit: ${esc(j.debit)} — ${peso(j.amount)}<br>
+    Credit: ${esc(j.credit)} — ${peso(j.amount)}</div>`
+  ).join("") || "No journal entries yet.";
+
+  const balances = {};
+  journals.forEach(j => {
+    balances[j.debit] = (balances[j.debit] || 0) + j.amount;
+    balances[j.credit] = (balances[j.credit] || 0) - j.amount;
+  });
+  $("sfpList").innerHTML = Object.entries(balances).map(([a,b]) =>
+    `<div class="record row"><span>${esc(a)}</span><b>${peso(b)}</b></div>`
+  ).join("") || "Add journal entries to preview balances.";
+
+  const debits = journals.reduce((s,j) => s + j.amount, 0);
+  const credits = journals.reduce((s,j) => s + j.amount, 0);
+  $("sfpCheck").textContent = journals.length
+    ? `Journal totals: Debits ${peso(debits)} | Credits ${peso(credits)}. Balanced journal totals do not guarantee a complete SFP.`
+    : "No posted journal entries.";
+}
+
+function addSaving(id) {
+  const g = goals.find(g => g.id === id);
+  if (!g) return;
+  const amount = Number(prompt("How much did you save?"));
+  if (!Number.isFinite(amount) || amount <= 0) return;
+  g.saved += amount;
+  persist();
+}
+
+function deleteGoal(id) {
+  if (!confirm("Delete this savings goal?")) return;
+  goals = goals.filter(g => g.id !== id);
+  persist();
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  }[c]));
+}
+
+render();
+convert();
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("./sw.js").catch(console.error);
+}
+</script>
+</body>
+</html>
