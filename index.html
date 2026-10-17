@@ -180,24 +180,102 @@
 
   <section id="tools" class="hidden">
     <h2>Financial Tools</h2>
-    <div class="card">
-      <h3>Receipt Scanner — prototype</h3>
-      <p class="muted">Select a receipt image. For now, enter the details manually. Automatic OCR will be added in a later step.</p>
-      <input type="file" id="receiptFile" accept="image/*">
-      <div id="receiptName" class="muted"></div>
-      <form id="receiptForm" class="form" style="margin-top:12px">
-        <label>Merchant / description <input id="rDesc" required></label>
-        <label>Amount (₱) <input id="rAmount" type="number" min="0.01" step="0.01" required></label>
-        <label>Suggested account
-          <select id="rAccount">
-            <option>Supplies</option><option>Supplies Expense</option>
-            <option>Utilities Expense</option><option>Equipment</option>
-            <option>Cash</option><option>Accounts Payable</option>
-          </select>
-        </label>
-        <button type="submit">Confirm & Save as Expense</button>
-      </form>
-    </div>
+   <div class="card">
+  <h3>Receipt Scanner — AI OCR</h3>
+
+  <p class="muted">
+    Upload a receipt image and automatically extract
+    its text. Please verify the details before saving.
+  </p>
+
+  <label for="receiptFile">Choose Receipt Image</label>
+  <input
+    type="file"
+    id="receiptFile"
+    accept="image/jpeg,image/png,image/webp"
+  >
+
+  <img
+    id="receiptPreview"
+    class="hidden"
+    alt="Receipt Preview"
+    style="max-width:100%;max-height:300px;margin-top:12px"
+  >
+
+  <div id="receiptName" class="muted"></div>
+
+  <button
+    type="button"
+    id="readReceipt"
+    style="width:100%;margin-top:12px"
+  >
+    Read Receipt
+  </button>
+
+  <p
+    id="receiptStatus"
+    class="notice"
+    role="status"
+    aria-live="polite"
+  >
+    Select a receipt image to begin.
+  </p>
+
+  <label for="receiptText">Extracted Receipt Text</label>
+
+  <textarea
+    id="receiptText"
+    rows="5"
+    placeholder="Receipt text will appear here..."
+    style="width:100%;box-sizing:border-box"
+  ></textarea>
+
+  <form
+    id="receiptForm"
+    class="form"
+    style="margin-top:12px"
+  >
+    <label>
+      Merchant / description
+      <input
+        id="rDesc"
+        type="text"
+        required
+        placeholder="Enter merchant name"
+      >
+    </label>
+
+    <label>
+      Amount (₱)
+      <input
+        id="rAmount"
+        type="number"
+        min="0.01"
+        step="0.01"
+        required
+        placeholder="0.00"
+      >
+    </label>
+
+    <label>
+      Suggested account
+
+      <select id="rAccount">
+        <option>Supplies</option>
+        <option>Supplies Expense</option>
+        <option>Utilities Expense</option>
+        <option>Equipment</option>
+        <option>Cash</option>
+        <option>Accounts Payable</option>
+      </select>
+    </label>
+
+    <button type="submit">
+      Confirm &amp; Save as Expense
+    </button>
+  </form>
+</div>
+
     <div class="card">
       <h3>PHP Currency Converter</h3>
       <p class="muted">Enter an exchange rate from a trusted source. No live rate is fetched in this version.</p>
@@ -409,5 +487,6 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("./sw.js").catch(console.error);
 }
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </body>
 </html>
